@@ -173,6 +173,7 @@ const setErr = (m) => { $("#err").textContent = m || ""; };
 const busy = (on, label) => { $("#loginBtn").disabled = on; $("#loginLabel").textContent = label || "Masuk dengan Akun BPKP"; };
 
 let MAN = null; const CACHE = {}; let CUR = "ringkasan";
+let BASE = { col: "populasi_tw4", pre: "" };   // D302: nasional; Perwakilan: populasi_pw/<Pxx>_*
 
 $("#loginBtn").addEventListener("click", async () => {
   setErr(""); busy(true, "Membuka login Google…");
@@ -190,10 +191,16 @@ onAuthStateChanged(auth, async (u) => {
   if (!isBpkp(u)) { setErr(`Akun ${u.email || ""} bukan akun BPKP. Gunakan akun @bpkp.go.id.`); await signOut(auth); return; }
   busy(true, "Memuat data…");
   try {
-    const snap = await getDoc(doc(db, "populasi_tw4", "manifest"));
+    const ak = await getDoc(doc(db, "akses", u.email.toLowerCase()));
+    if (!ak.exists()) { setErr(`Akun ${u.email} belum terdaftar untuk aplikasi ini. Akses diberikan kepada pegawai D302 dan pegawai Perwakilan BPKP sesuai daftar pegawai; hubungi Tim APP KDKMP (D302) bila perlu akses.`); await signOut(auth); return; }
+    const A = ak.data();
+    BASE = A.role === "D302" ? { col: "populasi_tw4", pre: "" } : { col: "populasi_pw", pre: A.pw + "_" };
+    for (const k in CACHE) delete CACHE[k];
+    Object.assign(SCOPE, { prov: "", kab: "", kec: "", kecName: "" });
+    const snap = await getDoc(doc(db, BASE.col, BASE.pre + "manifest"));
     if (!snap.exists()) throw new Error("Data belum tersedia.");
     MAN = JSON.parse(snap.data().json);
-    $("#who").textContent = u.email;
+    $("#who").textContent = `${u.email} · ${A.role === "D302" ? "D302 · nasional" : A.unit}`;
     start();
   } catch (e) {
     setErr(e && e.code === "permission-denied" ? "Akses ditolak. Pastikan memakai akun @bpkp.go.id." : "Gagal memuat data: " + (e.message || e));
@@ -203,7 +210,7 @@ onAuthStateChanged(auth, async (u) => {
 
 // ---- pemuatan dataset (potongan base64 gzip di Firestore)
 async function chunks(prefix, n) {
-  const parts = await Promise.all(Array.from({ length: n }, (_, i) => getDoc(doc(db, "populasi_tw4", `${prefix}_${i}`)).then((s) => s.data().d)));
+  const parts = await Promise.all(Array.from({ length: n }, (_, i) => getDoc(doc(db, BASE.col, `${BASE.pre}${prefix}_${i}`)).then((s) => s.data().d)));
   const bin = atob(parts.join("")); const u8 = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
   return u8;
@@ -234,7 +241,7 @@ const DESC = {
 function start() {
   $("#login").classList.add("hidden"); $("#app").classList.remove("hidden");
   $("#foot").textContent = "Sumber: " + MAN.sumber + ".";
-  setKpi(nasionalKpi(), "Nasional");
+  setKpi(nasionalKpi(), ROOT_LABEL());
   $("#tabs").innerHTML = TABS.map(([id, l]) => {
     const n = MAN.datasets[id] ? ` <span class="z">(${fmt(MAN.datasets[id].rows)})</span>` : "";
     return `<button class="tab" role="tab" data-t="${id}" aria-selected="${id === CUR}">${esc(l)}${n}</button>`;
@@ -250,7 +257,7 @@ function show(id) {
 }
 async function ringkasan(sub) {
   const v = $("#view");
-  v.innerHTML = `<div class="sub"><div class="f"><label for="subSel">Tabel</label><select id="subSel">${SUBS.map(([i, l]) => `<option value="${i}" ${i === sub ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></div></div><div id="subView"></div>`;
+  v.innerHTML = `<div class="sub"><div class="f"><label for="subSel">Tabel</label><select id="subSel">${SUBS.filter(([i]) => i === "drill" || MAN.datasets[i]).map(([i, l]) => `<option value="${i}" ${i === sub ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></div></div><div id="subView"></div>`;
   $("#subSel").addEventListener("change", (e) => ringkasan(e.target.value));
   if (sub === "drill") return drill($("#subView"));
   table(sub, $("#subView"), "", true);
@@ -277,11 +284,12 @@ function setKpi(m, label) {
   $("#meta").textContent = `BNBA populasi KDKMP · ${label} · data portal 6 Okt 2026`;
 }
 const nasionalKpi = () => ({ pop: MAN.kpi.populasi, lahan: MAN.kpi.lahan, terb: MAN.kpi.terbangun, k1: MAN.kpi.k1, k2: MAN.kpi.k2, k3: MAN.kpi.k3, k4: MAN.kpi.k4, k5: MAN.kpi.k5, lapor: MAN.kpi.belum_lapor });
-const scopeLabel = () => SCOPE.kec ? `Kec. ${SCOPE.kecName}, ${SCOPE.kab}` : SCOPE.kab ? SCOPE.kab : SCOPE.prov ? SCOPE.prov : "Nasional";
+const ROOT_LABEL = () => MAN && MAN.pw_nama ? `Wilayah ${MAN.pw_nama.replace("Perwakilan BPKP ", "Perwakilan ")}` : "Nasional";
+const scopeLabel = () => SCOPE.kec ? `Kec. ${SCOPE.kecName}, ${SCOPE.kab}` : SCOPE.kab ? SCOPE.kab : SCOPE.prov ? SCOPE.prov : ROOT_LABEL();
 
 async function drill(host) {
   const rid = (host._rid = (host._rid || 0) + 1);
-  const crumbs = [["Nasional", () => { Object.assign(SCOPE, { prov: "", kab: "", kec: "", kecName: "" }); drill(host); }]];
+  const crumbs = [[ROOT_LABEL(), () => { Object.assign(SCOPE, { prov: "", kab: "", kec: "", kecName: "" }); drill(host); }]];
   if (SCOPE.prov) crumbs.push([SCOPE.prov, () => { Object.assign(SCOPE, { kab: "", kec: "", kecName: "" }); drill(host); }]);
   if (SCOPE.kab) crumbs.push([SCOPE.kab, () => { Object.assign(SCOPE, { kec: "", kecName: "" }); drill(host); }]);
   if (SCOPE.kec) crumbs.push([`Kec. ${SCOPE.kecName}`, null]);
