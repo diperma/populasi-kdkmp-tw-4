@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Populasi KDKMP TW IV 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0B2D72; --blue:#2866AB; --red:#990000; --black:#111111;
+  --bg:#F4F6F9; --card:#FFFFFF; --ink:#1F2937; --ink2:#404040; --mute:#5B6472; --line:#DDE2EA; --alt:#EEF2F8;
+  --k4:#2866AB; --k2:#990000; --k1:#1F2937; --k3:#5B6472;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Poppins,Arial,sans-serif;font-size:14px}
+button,input,select{font:inherit}
+.stripe{height:6px;background:linear-gradient(90deg,var(--blue) 0 22%,var(--red) 22% 48%,var(--black) 48% 100%)}
+.hidden{display:none!important}
+
+/* login */
+#login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.login-card{width:100%;max-width:400px;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 8px 24px rgba(11,45,114,.08)}
+.login-body{padding:28px 28px 24px}
+.brand{font-size:12px;color:var(--mute);letter-spacing:.02em}
+.login-title{margin:6px 0 2px;font-size:22px;font-weight:700;color:var(--ink2);line-height:1.25}
+.login-title b{color:var(--blue)}
+.login-sub{margin:0 0 20px;color:var(--mute);font-size:13px}
+label{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin:12px 0 6px}
+input[type=text],input[type=password],input[type=search],select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
+input:focus,select:focus{outline:2px solid var(--blue);outline-offset:0;border-color:var(--blue)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 16px;border-radius:6px;border:1px solid transparent;cursor:pointer;font-weight:600}
+.btn-primary{background:var(--navy);color:#fff;width:100%;margin-top:20px}
+.btn-primary:disabled{opacity:.6;cursor:progress}
+.btn-ghost{background:#fff;border-color:var(--line);color:var(--ink)}
+.btn-ghost:hover{border-color:var(--blue);color:var(--blue)}
+.err{color:var(--red);font-size:13px;margin-top:12px;min-height:18px}
+
+/* app */
+header.top{background:var(--card);border-bottom:1px solid var(--line)}
+.top-inner{max-width:1360px;margin:0 auto;padding:14px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.top h1{margin:0;font-size:22px;font-weight:700;color:var(--ink2);line-height:1.2}
+.top h1 b{color:var(--blue)}
+.top .meta{color:var(--mute);font-size:12px}
+.top .spacer{flex:1}
+main{max-width:1360px;margin:0 auto;padding:16px}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--navy);border-radius:6px;padding:10px 12px;display:flex;align-items:center;gap:10px}
+.kpi .n{font-size:26px;font-weight:700;line-height:1}
+.kpi .l{font-size:12px;color:var(--ink);line-height:1.3}
+.tabs{display:flex;gap:4px;border-bottom:2px solid var(--line);margin-bottom:12px}
+.tab{background:none;border:none;padding:10px 14px;cursor:pointer;font-weight:600;color:var(--mute);border-bottom:3px solid transparent;margin-bottom:-2px}
+.tab[aria-selected=true]{color:var(--navy);border-bottom-color:var(--navy)}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:10px}
+.toolbar .f{min-width:200px;flex:1}
+.toolbar .f label{margin-top:0}
+.count{color:var(--mute);font-size:13px;margin:4px 0 8px}
+.tablewrap{background:var(--card);border:1px solid var(--line);border-radius:6px;overflow:auto;max-height:70vh}
+table{border-collapse:collapse;width:100%;font-size:13px}
+thead th{position:sticky;top:0;background:var(--navy);color:#fff;text-align:left;font-weight:600;padding:9px 10px;white-space:nowrap;z-index:1}
+tbody td{padding:7px 10px;border-top:1px solid var(--line);vertical-align:top}
+tbody tr:nth-child(even) td{background:var(--alt)}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover td{background:#DCE7F5}
+td.num,th.num{text-align:center;white-space:nowrap}
+td.no{background:var(--blue)!important;color:#fff;font-weight:600;text-align:center}
+.z{color:#A0A7B4}
+.b4{color:var(--k4);font-weight:700}.b2{color:var(--k2);font-weight:700}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap;border:1px solid}
+.bg4p{color:#fff;background:var(--blue);border-color:var(--blue)}
+.bg4o{color:var(--blue);background:#E3ECF7;border-color:#B9CDE6}
+.bg2{color:#fff;background:var(--red);border-color:var(--red)}
+.bg1{color:var(--ink);background:#E5E7EB;border-color:#D1D5DB}
+.bg3{color:var(--mute);background:#fff;border-color:var(--line)}
+.dot{font-weight:700}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--ink);margin:10px 2px}
+.note{font-size:12px;color:var(--mute);margin-top:10px;line-height:1.5}
+a{color:var(--blue)}
+footer{max-width:1360px;margin:0 auto;padding:8px 16px 24px;color:var(--mute);font-size:12px}
+@media (max-width:1000px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:560px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.top h1{font-size:18px}.kpi .n{font-size:22px}}
+</style>
+
+<style>
+.kpis.k8{grid-template-columns:repeat(4,minmax(0,1fr))}
+.tabs{overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;padding-bottom:2px}
+.tab{white-space:nowrap}
+.pager{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
+.pager .btn{padding:6px 12px}
+.pager .info{color:var(--mute);font-size:13px}
+.loading{padding:28px;text-align:center;color:var(--mute)}
+.ok{color:#1F7A3A;font-weight:700}
+.sub{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:10px}
+.sub .f{min-width:220px}
+.dl{white-space:nowrap}
+.tablewrap td{white-space:nowrap}
+.tablewrap td.wrap{white-space:normal;min-width:240px}
+.tablewrap thead th{white-space:normal;vertical-align:bottom;line-height:1.25;min-width:72px;max-width:170px;font-size:12px}
+.tablewrap thead th.sortable{cursor:pointer}
+.tablewrap thead th.sortable:hover{background:#163E8F}
+.crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:2px 0 10px;font-size:14px}
+.crumb{background:none;border:none;padding:2px 0;color:var(--blue);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.crumbs .sep{color:var(--mute)}
+tr.tot td{background:#D9E1F2!important;font-weight:700;border-top:2px solid var(--navy)}
+table.drill td:first-child{min-width:200px}
+.jump{padding:6px 10px;font-size:12.5px}
+@media (max-width:1000px){.kpis.k8{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+
+<section id="login" aria-label="Masuk">
+  <div class="login-card">
+    <div class="stripe"></div>
+    <div class="login-body">
+      <div class="brand">Badan Pengawasan Keuangan dan Pembangunan</div>
+      <h1 class="login-title">Populasi <b>KDKMP TW IV 2026</b></h1>
+      <p class="login-sub">Masuk dengan akun Google BPKP (@bpkp.go.id) untuk melihat BNBA populasi KDKMP: gerai, beroperasi, mandek, terbangun &amp; sarpras, dan belum memiliki lahan.</p>
+      <button class="btn btn-primary" id="loginBtn" type="button">
+        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 38.2 44 33 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+        <span id="loginLabel">Masuk dengan Akun BPKP</span>
+      </button>
+      <div class="err" id="err" role="alert"></div>
+      <p class="login-sub" style="margin:8px 0 0;font-size:12px">Hanya akun @bpkp.go.id yang dapat mengakses data.</p>
+    </div>
+  </div>
+</section>
+
+<div id="app" class="hidden">
+  <header class="top">
+    <div class="top-inner">
+      <div>
+        <h1>Populasi <b>KDKMP TW IV 2026</b></h1>
+        <div class="meta" id="meta"></div>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn btn-ghost dl" id="xlsx" type="button">Unduh Excel BNBA</button>
+      <span class="meta" id="who"></span>
+      <button class="btn btn-ghost" id="logout" type="button">Keluar</button>
+    </div>
+    <div class="stripe"></div>
+  </header>
+  <main>
+    <div class="kpis k8" id="kpis"></div>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <section id="view"></section>
+  </main>
+  <footer id="foot"></footer>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const $ = (s) => document.querySelector(s);
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = (n) => Number(n || 0).toLocaleString("id-ID");
+const fb = initializeApp({
+  apiKey: "AIzaSyD4Ayisb3Gsb0VYfr_H4RtpLQH7du9h2DY",
+  authDomain: "uji-petik-kdkmp-tw-4-2026.firebaseapp.com",
+  projectId: "uji-petik-kdkmp-tw-4-2026",
+  appId: "1:679154129581:web:8ff500bf11eb77f4358424",
+});
+const auth = getAuth(fb), db = getFirestore(fb);
+const provider = new GoogleAuthProvider();
+provider.setCustomParameters({ hd: "bpkp.go.id", prompt: "select_account" });
+const isBpkp = (u) => !!u && u.emailVerified && /^[^@]+@bpkp\.go\.id$/i.test(u.email || "");
+const setErr = (m) => { $("#err").textContent = m || ""; };
+const busy = (on, label) => { $("#loginBtn").disabled = on; $("#loginLabel").textContent = label || "Masuk dengan Akun BPKP"; };
+
+let MAN = null; const CACHE = {}; let CUR = "ringkasan";
+
+$("#loginBtn").addEventListener("click", async () => {
+  setErr(""); busy(true, "Membuka login Google…");
+  try { await signInWithPopup(auth, provider); }
+  catch (e) {
+    if (e && (e.code === "auth/popup-blocked" || e.code === "auth/operation-not-supported-in-this-environment")) { await signInWithRedirect(auth, provider); return; }
+    if (e && e.code !== "auth/popup-closed-by-user" && e.code !== "auth/cancelled-popup-request") setErr("Login gagal: " + (e.code || e.message));
+    busy(false);
+  }
+});
+$("#logout").addEventListener("click", () => signOut(auth));
+
+onAuthStateChanged(auth, async (u) => {
+  if (!u) { MAN = null; for (const k in CACHE) delete CACHE[k]; $("#app").classList.add("hidden"); $("#login").classList.remove("hidden"); busy(false); return; }
+  if (!isBpkp(u)) { setErr(`Akun ${u.email || ""} bukan akun BPKP. Gunakan akun @bpkp.go.id.`); await signOut(auth); return; }
+  busy(true, "Memuat data…");
+  try {
+    const snap = await getDoc(doc(db, "populasi_tw4", "manifest"));
+    if (!snap.exists()) throw new Error("Data belum tersedia.");
+    MAN = JSON.parse(snap.data().json);
+    $("#who").textContent = u.email;
+    start();
+  } catch (e) {
+    setErr(e && e.code === "permission-denied" ? "Akses ditolak. Pastikan memakai akun @bpkp.go.id." : "Gagal memuat data: " + (e.message || e));
+    await signOut(auth);
+  } finally { busy(false); }
+});
+
+// ---- pemuatan dataset (potongan base64 gzip di Firestore)
+async function chunks(prefix, n) {
+  const parts = await Promise.all(Array.from({ length: n }, (_, i) => getDoc(doc(db, "populasi_tw4", `${prefix}_${i}`)).then((s) => s.data().d)));
+  const bin = atob(parts.join("")); const u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return u8;
+}
+async function dataset(name) {
+  if (CACHE[name]) return CACHE[name];
+  const meta = MAN.datasets[name];
+  const gz = await chunks(name, meta.chunks);
+  const txt = await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
+  return (CACHE[name] = JSON.parse(txt));
+}
+
+// ---- tampilan
+const TABS = [
+  ["ringkasan", "Ringkasan"], ["gerai", "Gerai"], ["beroperasi", "Beroperasi"], ["mandek", "Mandek > 3 bln"],
+  ["terbangun", "Terbangun & Sarpras"], ["belum_lahan", "Belum Lahan"], ["populasi", "Populasi"],
+];
+const SUBS = [["drill", "Rekap wilayah (klik untuk drilldown)"], ["riwayat", "Riwayat 2 Okt vs 6 Okt"], ["rekap_uji", "Rekap uji petik (beroperasi)"]];
+const DESC = {
+  gerai: "Seluruh gerai pada lahan terpetakan di portal (6 Okt 2026) beserta status pembangunan, keterlambatan, kelengkapan sarpras, dan penanda kategori (1)–(5).",
+  beroperasi: "Daftar resmi 1.075 KDKMP sudah beroperasi beserta hasil observasi, data penduduk, hasil verval SIMKOPDES, dan kategori uji petik.",
+  mandek: "Gedung belum terbangun dengan keterlambatan lebih dari 3 bulan dari target (parameter default), diurutkan dari yang paling lama.",
+  terbangun: "Gedung terbangun (progres 100%) dengan status per item sarpras.",
+  belum_lahan: "KDKMP pada master 84.070 yang kode desanya belum ada di data pemetaan lahan portal.",
+  populasi: "Seluruh KDKMP pada master 84.070 beserta status lahan dan status pembangunan gerai.",
+};
+
+function start() {
+  $("#login").classList.add("hidden"); $("#app").classList.remove("hidden");
+  $("#foot").textContent = "Sumber: " + MAN.sumber + ".";
+  setKpi(nasionalKpi(), "Nasional");
+  $("#tabs").innerHTML = TABS.map(([id, l]) => {
+    const n = MAN.datasets[id] ? ` <span class="z">(${fmt(MAN.datasets[id].rows)})</span>` : "";
+    return `<button class="tab" role="tab" data-t="${id}" aria-selected="${id === CUR}">${esc(l)}${n}</button>`;
+  }).join("");
+  $("#tabs").querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => show(b.dataset.t)));
+  show(CUR);
+}
+function show(id) {
+  CUR = id;
+  $("#tabs").querySelectorAll(".tab").forEach((b) => b.setAttribute("aria-selected", b.dataset.t === id));
+  if (id === "ringkasan") return ringkasan("drill");
+  table(id, $("#view"), DESC[id]);
+}
+async function ringkasan(sub) {
+  const v = $("#view");
+  v.innerHTML = `<div class="sub"><div class="f"><label for="subSel">Tabel</label><select id="subSel">${SUBS.map(([i, l]) => `<option value="${i}" ${i === sub ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></div></div><div id="subView"></div>`;
+  $("#subSel").addEventListener("change", (e) => ringkasan(e.target.value));
+  if (sub === "drill") return drill($("#subView"));
+  table(sub, $("#subView"), "", true);
+}
+
+// ---- Drilldown wilayah: Nasional → Provinsi → Kab/Kota → Kecamatan → Desa/KDKMP
+const SCOPE = { prov: "", kab: "", kec: "", kecName: "" };
+const MKEYS = [
+  ["k1", "(1) Terbangun dengan kelengkapan", "(1)"], ["k2", "(2) Mandek > 3 bulan", "(2)"], ["k3", "(3) Belum memiliki lahan", "(3)"],
+  ["k4", "(4) Sudah beroperasi", "(4)"], ["k5", "(5) Sedang progres membangun", "(5)"], ["pop", "Populasi KDKMP (NIK)", "Populasi"],
+  ["lahan", "Lahan terpetakan (gerai di portal)", "Lahan terpetakan"], ["terb", "Gedung terbangun (100%)", "Gedung terbangun"],
+  ["lapor", "Belum melapor progres", "Belum melapor"],
+];
+function fromRekap(D, r) {
+  const g = (pre) => { const i = D.cols.findIndex((c) => c.startsWith(pre)); return i < 0 ? 0 : Number(r[i] || 0); };
+  return { k1: g("(1)"), k2: g("(2)"), k3: g("(3)"), k4: g("(4)"), k5: g("(5)"), pop: g("Populasi"), lahan: g("Lahan terpetakan"), terb: g("Gedung terbangun"), lapor: g("Belum melapor") };
+}
+function setKpi(m, label) {
+  const K = [[m.pop, "Populasi KDKMP", "var(--navy)"], [m.lahan, "Lahan terpetakan\n(gerai di portal)", "var(--navy)"],
+    [m.terb, "Gedung terbangun\n(progres 100%)", "var(--navy)"], [m.k5, "(5) Sedang progres\nmembangun", "var(--ink)"],
+    [m.k1, "(1) Terbangun dengan\nkelengkapan", "var(--ink)"], [m.k2, "(2) Belum terbangun,\nmandek > 3 bulan", "var(--red)"],
+    [m.k3, "(3) Belum memiliki\nlahan", "var(--ink)"], [m.k4, "(4) Sudah terbangun\ndan beroperasi", "var(--blue)"]];
+  $("#kpis").innerHTML = K.map(([n, l, c]) => `<div class="kpi" style="border-left-color:${c}"><div class="n" style="color:${c}">${fmt(n)}</div><div class="l">${esc(l).replace("\n", "<br>")}</div></div>`).join("");
+  $("#meta").textContent = `BNBA populasi KDKMP · ${label} · data portal 6 Okt 2026`;
+}
+const nasionalKpi = () => ({ pop: MAN.kpi.populasi, lahan: MAN.kpi.lahan, terb: MAN.kpi.terbangun, k1: MAN.kpi.k1, k2: MAN.kpi.k2, k3: MAN.kpi.k3, k4: MAN.kpi.k4, k5: MAN.kpi.k5, lapor: MAN.kpi.belum_lapor });
+const scopeLabel = () => SCOPE.kec ? `Kec. ${SCOPE.kecName}, ${SCOPE.kab}` : SCOPE.kab ? SCOPE.kab : SCOPE.prov ? SCOPE.prov : "Nasional";
+
+async function drill(host) {
+  const rid = (host._rid = (host._rid || 0) + 1);
+  const crumbs = [["Nasional", () => { Object.assign(SCOPE, { prov: "", kab: "", kec: "", kecName: "" }); drill(host); }]];
+  if (SCOPE.prov) crumbs.push([SCOPE.prov, () => { Object.assign(SCOPE, { kab: "", kec: "", kecName: "" }); drill(host); }]);
+  if (SCOPE.kab) crumbs.push([SCOPE.kab, () => { Object.assign(SCOPE, { kec: "", kecName: "" }); drill(host); }]);
+  if (SCOPE.kec) crumbs.push([`Kec. ${SCOPE.kecName}`, null]);
+  const level = SCOPE.kec ? "desa" : SCOPE.kab ? "kec" : SCOPE.prov ? "kab" : "prov";
+  const hint = { prov: "Klik provinsi untuk melihat kabupaten/kota.", kab: "Klik kabupaten/kota untuk melihat kecamatan.", kec: "Klik kecamatan untuk melihat daftar desa/KDKMP.", desa: "Daftar KDKMP per desa di kecamatan ini." }[level];
+  host.innerHTML = `<nav class="crumbs" aria-label="Wilayah">${crumbs.map(([t], i) => i < crumbs.length - 1 ? `<button type="button" class="crumb" data-i="${i}">${esc(t)}</button><span class="sep">›</span>` : `<b>${esc(t)}</b>`).join("")}</nav>
+    <p class="note" style="margin:0 0 8px">${esc(hint)}</p><div class="toolbar" style="align-items:center">
+    ${SCOPE.prov ? `<span class="note" style="margin:0">Buka BNBA wilayah ini:</span>${[["gerai", "Gerai"], ["mandek", "Mandek"], ["beroperasi", "Beroperasi"], ["belum_lahan", "Belum lahan"], ["populasi", "Populasi"]].map(([t, l]) => `<button class="btn btn-ghost jump" data-t="${t}" type="button">${l}</button>`).join("")}` : ""}
+    <button class="btn btn-ghost" id="dcsv" type="button">Unduh CSV</button></div>
+    <div id="dview"><div class="loading">Memuat…</div></div>`;
+  host.querySelectorAll(".crumb").forEach((b) => b.addEventListener("click", () => crumbs[+b.dataset.i][1]()));
+  host.querySelectorAll(".jump").forEach((b) => b.addEventListener("click", () => show(b.dataset.t)));
+  const dv = host.querySelector("#dview");
+  try {
+    let rows, total, cols, csvRows;
+    if (level === "prov" || level === "kab") {
+      const D = await dataset(level === "prov" ? "rekap_prov" : "rekap_kab");
+      if (host._rid !== rid) return;
+      const iP = D.cols.indexOf("Provinsi"), iK = D.cols.indexOf("Kabupaten/Kota");
+      const src = D.rows.filter((r) => r[iP] && !String(r[iP]).toUpperCase().startsWith("TOTAL") && (level === "prov" || r[iP] === SCOPE.prov));
+      rows = src.map((r) => ({ name: level === "prov" ? r[iP] : r[iK], m: fromRekap(D, r) }));
+      const tot = level === "prov" ? nasionalKpi() : sumM(rows);
+      setKpi(tot, scopeLabel());
+      renderLevel(dv, rows, tot, level === "prov" ? "Provinsi" : "Kabupaten/Kota", (name) => {
+        if (level === "prov") SCOPE.prov = name; else SCOPE.kab = name;
+        drill(host);
+      });
+    } else {
+      dv.innerHTML = `<div class="loading">Memuat data desa (populasi dan gerai)…</div>`;
+      const [P, G] = await Promise.all([dataset("populasi"), dataset("gerai")]);
+      if (host._rid !== rid) return;
+      const pc = Object.fromEntries(P.cols.map((c, i) => [c, i])), gc = Object.fromEntries(G.cols.map((c, i) => [c, i]));
+      const pRows = P.rows.filter((r) => r[pc["Provinsi"]] === SCOPE.prov && r[pc["Kabupaten/Kota"]] === SCOPE.kab);
+      const gRows = G.rows.filter((r) => r[gc["Provinsi"]] === SCOPE.prov && r[gc["Kabupaten/Kota"]] === SCOPE.kab);
+      const kecCode = (kode) => String(kode || "").slice(0, 8);
+      if (level === "kec") {
+        const by = new Map();
+        const get = (code, name) => { if (!by.has(code)) by.set(code, { code, name: name || code, m: { k1: 0, k2: 0, k3: 0, k4: 0, k5: 0, pop: 0, lahan: 0, terb: 0, lapor: 0 } }); const o = by.get(code); if (name && o.name === code) o.name = name; return o; };
+        for (const r of pRows) { const o = get(kecCode(r[pc["Kode Desa"]]), r[pc["Kecamatan"]]); o.m.pop++; if (r[pc["Status lahan gerai"]] === "Belum terpetakan") o.m.k3++; }
+        for (const r of gRows) {
+          const o = get(kecCode(r[gc["Kode Desa"]]), r[gc["Kecamatan"]]); o.m.lahan++;
+          const st = r[gc["Status pembangunan"]]; if (st === "Selesai") o.m.terb++; if (st === "Belum melapor progres") o.m.lapor++;
+          o.m.k1 += +(r[gc["(1) Terbangun dengan kelengkapan"]] || 0); o.m.k2 += +(r[gc["(2) Mandek > 3 bulan"]] || 0);
+          o.m.k4 += +(r[gc["(4) Beroperasi"]] || 0); o.m.k5 += +(r[gc["(5) Sedang progres"]] || 0);
+        }
+        rows = [...by.values()].sort((a, b) => String(a.name).localeCompare(String(b.name), "id"));
+        const tot = sumM(rows); setKpi(tot, scopeLabel());
+        renderLevel(dv, rows, tot, "Kecamatan", (name, row) => { SCOPE.kec = row.code; SCOPE.kecName = name; drill(host); });
+      } else {
+        const pk = pRows.filter((r) => kecCode(r[pc["Kode Desa"]]) === SCOPE.kec);
+        const gk = gRows.filter((r) => kecCode(r[gc["Kode Desa"]]) === SCOPE.kec);
+        const gBy = new Map(gk.map((r) => [r[gc["Kode Desa"]], r]));
+        const seen = new Set();
+        const list = pk.map((r) => { const k = r[pc["Kode Desa"]]; seen.add(k); return { p: r, g: gBy.get(k) || null }; });
+        for (const r of gk) if (!seen.has(r[gc["Kode Desa"]])) list.push({ p: null, g: r });
+        list.sort((a, b) => String(a.p ? a.p[pc["Desa/Kelurahan"]] : a.g[gc["Desa/Kelurahan"]]).localeCompare(String(b.p ? b.p[pc["Desa/Kelurahan"]] : b.g[gc["Desa/Kelurahan"]]), "id"));
+        const m = { k1: 0, k2: 0, k3: 0, k4: 0, k5: 0, pop: pk.length, lahan: gk.length, terb: 0, lapor: 0 };
+        for (const { p } of list) if (p && p[pc["Status lahan gerai"]] === "Belum terpetakan") m.k3++;
+        for (const r of gk) { const st = r[gc["Status pembangunan"]]; if (st === "Selesai") m.terb++; if (st === "Belum melapor progres") m.lapor++;
+          m.k1 += +(r[gc["(1) Terbangun dengan kelengkapan"]] || 0); m.k2 += +(r[gc["(2) Mandek > 3 bulan"]] || 0); m.k4 += +(r[gc["(4) Beroperasi"]] || 0); m.k5 += +(r[gc["(5) Sedang progres"]] || 0); }
+        setKpi(m, scopeLabel());
+        const DC = ["Desa/Kelurahan", "Kode Desa", "NIK Koperasi", "Nama Koperasi", "Status lahan", "Status pembangunan", "Progres 6 Okt (%)", "Hari lewat target", "Kategori keterlambatan", "Status kelengkapan sarpras", "Item sarpras tiba/terpasang", "(1) Lengkap", "(2) Mandek", "(4) Beroperasi", "(5) Progres", "Peta"];
+        const line = ({ p, g }) => {
+          const G_ = (c) => (g ? g[gc[c]] : null);
+          return [p ? p[pc["Desa/Kelurahan"]] : G_("Desa/Kelurahan"), p ? p[pc["Kode Desa"]] : G_("Kode Desa"), p ? p[pc["NIK Koperasi"]] : G_("NIK Koperasi (master)"),
+            p ? p[pc["Nama Koperasi"]] : G_("Nama Koperasi (portal)"), p ? p[pc["Status lahan gerai"]] : "Terpetakan", G_("Status pembangunan"), G_("Progres 6 Okt (%)"),
+            G_("Hari lewat target"), G_("Kategori keterlambatan"), G_("Status kelengkapan sarpras"), G_("Item sarpras tiba/terpasang"),
+            G_("(1) Terbangun dengan kelengkapan"), G_("(2) Mandek > 3 bulan"), G_("(4) Beroperasi"), G_("(5) Sedang progres"), [G_("Latitude"), G_("Longitude")]];
+        };
+        const L = list.map(line);
+        const flag = (v) => v === 1 ? '<span class="ok">✓</span>' : '<span class="z">·</span>';
+        dv.innerHTML = `<div class="count">${fmt(L.length)} KDKMP/desa di Kec. ${esc(SCOPE.kecName)}</div><div class="tablewrap"><table><thead><tr>${DC.map((c) => `<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>` +
+          L.map((r) => `<tr>${r.map((v, i) => {
+            if (i === 15) return `<td>${v[0] && v[1] ? `<a href="https://www.google.com/maps?q=${encodeURIComponent(v[0] + "," + v[1])}" target="_blank" rel="noopener">Buka</a>` : '<span class="z">–</span>'}</td>`;
+            if (i >= 11) return `<td class="num">${v === null ? '<span class="z">–</span>' : flag(v)}</td>`;
+            if (v === null || v === "" || v === "-") return `<td class="z">–</td>`;
+            if (i === 3) return `<td class="wrap">${esc(v)}</td>`;
+            if (typeof v === "number") return `<td class="num">${Number.isInteger(v) ? fmt(v) : v.toLocaleString("id-ID", { maximumFractionDigits: 2 })}</td>`;
+            if (i === 4) return `<td><span class="badge ${v === "Terpetakan" ? "bg1" : "bg3"}">${esc(v)}</span></td>`;
+            if (i === 5) return `<td><span class="badge ${v === "Selesai" ? "bg4o" : v === "Sedang dibangun" ? "bg1" : "bg3"}">${esc(v)}</span></td>`;
+            return `<td>${esc(v)}</td>`; }).join("")}</tr>`).join("") + "</tbody></table></div>";
+        cols = DC.slice(0, 15); csvRows = L.map((r) => r.slice(0, 15));
+      }
+    }
+    host.querySelector("#dcsv").onclick = () => {
+      let head, data;
+      if (csvRows) { head = cols; data = csvRows; }
+      else { head = ["Wilayah", ...MKEYS.map((k) => k[1])]; data = (rows || []).map((r) => [r.name, ...MKEYS.map((k) => r.m[k[0]])]); }
+      const qv = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+      const csv = "﻿" + [head.map(qv).join(";")].concat(data.map((r) => r.map(qv).join(";"))).join("\r\n");
+      const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+      a.download = `rekap_${scopeLabel().replace(/[^A-Za-z0-9]+/g, "_")}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    };
+  } catch (e) { if (host._rid === rid) dv.innerHTML = `<div class="err">Gagal memuat data: ${esc(e.message || e)}</div>`; }
+}
+function sumM(rows) {
+  const t = { k1: 0, k2: 0, k3: 0, k4: 0, k5: 0, pop: 0, lahan: 0, terb: 0, lapor: 0 };
+  for (const r of rows) for (const k in t) t[k] += r.m[k] || 0;
+  return t;
+}
+function renderLevel(dv, rows, tot, label, onPick) {
+  let sortK = null, dir = -1;
+  const pct = (a, b) => b ? (a / b * 100).toLocaleString("id-ID", { maximumFractionDigits: 1 }) + "%" : "–";
+  const H = [["_name", label], ...MKEYS.map((k) => [k[0], k[1]]), ["_pl", "% belum punya lahan"], ["_pt", "% gerai terbangun"]];
+  const val = (r, k) => k === "_pl" ? (r.m.pop ? r.m.k3 / r.m.pop : 0) : k === "_pt" ? (r.m.lahan ? r.m.terb / r.m.lahan : 0) : r.m[k];
+  const cell = (k, m) => {
+    if (k === "_pl") return `<td class="num">${pct(m.k3, m.pop)}</td>`;
+    if (k === "_pt") return `<td class="num">${pct(m.terb, m.lahan)}</td>`;
+    const v = m[k]; const cls = k === "k4" && v ? "b4" : k === "k2" && v ? "b2" : "";
+    return v ? `<td class="num ${cls}">${fmt(v)}</td>` : `<td class="num z">–</td>`;
+  };
+  const draw = () => {
+    const R = !sortK ? rows : [...rows].sort((a, b) => sortK === "_name"
+      ? String(a.name).localeCompare(String(b.name), "id") * dir
+      : (val(a, sortK) - val(b, sortK)) * dir);
+    dv.innerHTML = `<div class="count">${fmt(rows.length)} ${label.toLowerCase()} · klik judul kolom untuk mengurutkan</div><div class="tablewrap"><table class="drill"><thead><tr>` +
+      H.map(([k, l]) => `<th class="${k === "_name" ? "" : "num "}sortable" data-k="${k}">${esc(l)}${sortK === k ? (dir < 0 ? " ▼" : " ▲") : ""}</th>`).join("") + `</tr></thead><tbody>` +
+      R.map((r, i) => `<tr class="click" data-i="${rows.indexOf(r)}"><td><b>${esc(r.name)}</b> <span class="z">›</span></td>${H.slice(1).map(([k]) => cell(k, r.m)).join("")}</tr>`).join("") +
+      `<tr class="tot"><td><b>TOTAL</b></td>${H.slice(1).map(([k]) => cell(k, tot)).join("")}</tr></tbody></table></div>`;
+    dv.querySelectorAll("tr.click").forEach((tr) => tr.addEventListener("click", () => { const r = rows[+tr.dataset.i]; onPick(r.name, r); }));
+    dv.querySelectorAll("th.sortable").forEach((th) => th.addEventListener("click", () => { const k = th.dataset.k; dir = sortK === k ? -dir : (k === "_name" ? 1 : -1); sortK = k; draw(); }));
+  };
+  draw();
+}
+
+const PAGE = 100;
+async function table(name, host, desc, compact) {
+  const rid = (host._rid = (host._rid || 0) + 1);
+  host.innerHTML = `<div class="loading">Memuat ${fmt(MAN.datasets[name].rows)} baris…</div>`;
+  let D;
+  try { D = await dataset(name); } catch (e) { if (host._rid === rid) host.innerHTML = `<div class="err">Gagal memuat data: ${esc(e.message || e)}</div>`; return; }
+  if (host._rid !== rid || !host.isConnected) return;   // pengguna sudah pindah tab
+  const ci = Object.fromEntries(D.cols.map((c, i) => [c, i]));
+  const latI = ci["Latitude"], lonI = ci["Longitude"];
+  const filt = D.filters.filter((f) => f in ci);
+  const opts = (col, rows) => [...new Set(rows.map((r) => r[ci[col]]).filter((x) => x !== null && x !== ""))].sort((a, b) => String(a).localeCompare(String(b), "id"));
+  host.innerHTML = (desc ? `<p class="note" style="margin-top:0">${esc(desc)}</p>` : "") +
+    `<div class="toolbar">${filt.map((f, i) => `<div class="f"><label for="flt${i}">${esc(f)}</label><select id="flt${i}" data-col="${esc(f)}"></select></div>`).join("")}
+     <div class="f"><label for="q">Cari</label><input id="q" type="search" placeholder="desa, kecamatan, kode, NIK, nama…"></div>
+     <button class="btn btn-ghost" id="csv" type="button">Unduh CSV</button></div>
+     <div class="count" id="cnt"></div><div class="tablewrap"><table id="tbl"></table></div>
+     <div class="pager"><button class="btn btn-ghost" id="prev" type="button">‹ Sebelumnya</button><span class="info" id="pinfo"></span><button class="btn btn-ghost" id="next" type="button">Berikutnya ›</button></div>`;
+  const sels = filt.map((f, i) => host.querySelector(`#flt${i}`));
+  let page = 0, rows = D.rows;
+  const fillSel = () => {
+    sels.forEach((s, i) => {
+      const keep = s.value;
+      // opsi Kab/Kota bergantung pada Provinsi terpilih
+      let base = D.rows;
+      if (filt[i] === "Kabupaten/Kota" && "Provinsi" in ci) { const pv = sels[filt.indexOf("Provinsi")]?.value; if (pv) base = D.rows.filter((r) => r[ci["Provinsi"]] === pv); }
+      const o = opts(filt[i], base);
+      s.innerHTML = `<option value="">Semua (${fmt(o.length)})</option>` + o.map((x) => `<option ${String(x) === keep ? "selected" : ""}>${esc(x)}</option>`).join("");
+      if (keep && !o.map(String).includes(keep)) s.value = "";
+    });
+  };
+  const apply = () => {
+    const q = host.querySelector("#q").value.trim().toLowerCase();
+    const f = sels.map((s, i) => [ci[filt[i]], s.value]).filter(([, v]) => v);
+    rows = D.rows.filter((r) => f.every(([i, v]) => String(r[i]) === v) && (!q || r.some((x) => x !== null && String(x).toLowerCase().includes(q))));
+    page = 0; render();
+  };
+  const isFlag = (c) => /^\(\d\)/.test(c) && !compact;
+  const isPct = (c) => c.startsWith("%");
+  const cell = (c, v) => {
+    if (v === null || v === "") return `<td class="z">–</td>`;
+    if (isFlag(c)) return `<td class="num">${v === 1 ? '<span class="ok">✓</span>' : '<span class="z">·</span>'}</td>`;
+    if (typeof v === "number") {
+      if (isPct(c)) return `<td class="num">${(v * 100).toLocaleString("id-ID", { maximumFractionDigits: 1 })}%</td>`;
+      if (c === "Latitude" || c === "Longitude") return `<td>${v}</td>`;
+      if (c.startsWith("Δ")) return `<td class="num">${v > 0 ? "+" : ""}${fmt(v)}</td>`;
+      return `<td class="num">${Number.isInteger(v) ? fmt(v) : v.toLocaleString("id-ID", { maximumFractionDigits: 2 })}</td>`;
+    }
+    const s = String(v);
+    if (/^https?:\/\//.test(s)) return `<td><a href="${esc(s)}" target="_blank" rel="noopener">Buka</a></td>`;
+    return `<td class="${s.length > 60 ? "wrap" : ""}">${esc(s)}</td>`;
+  };
+  const render = () => {
+    const pages = Math.max(1, Math.ceil(rows.length / PAGE)); page = Math.min(page, pages - 1);
+    const slice = rows.slice(page * PAGE, page * PAGE + PAGE);
+    host.querySelector("#cnt").textContent = `${fmt(rows.length)} baris ditampilkan dari ${fmt(D.rows.length)}`;
+    host.querySelector("#tbl").innerHTML = `<thead><tr><th class="num">#</th>${D.cols.map((c) => `<th>${esc(c)}</th>`).join("")}${latI !== undefined ? "<th>Peta</th>" : ""}</tr></thead><tbody>` +
+      slice.map((r, k) => `<tr><td class="num z">${fmt(page * PAGE + k + 1)}</td>${r.map((v, i) => cell(D.cols[i], v)).join("")}${latI !== undefined ? `<td>${r[latI] && r[lonI] ? `<a href="https://www.google.com/maps?q=${encodeURIComponent(r[latI] + "," + r[lonI])}" target="_blank" rel="noopener">Buka</a>` : '<span class="z">–</span>'}</td>` : ""}</tr>`).join("") + "</tbody>";
+    host.querySelector("#pinfo").textContent = `Halaman ${fmt(page + 1)} dari ${fmt(pages)}`;
+    host.querySelector("#prev").disabled = page === 0; host.querySelector("#next").disabled = page >= pages - 1;
+    host.querySelector(".pager").classList.toggle("hidden", pages <= 1);
+  };
+  sels.forEach((s) => s.addEventListener("change", () => { if (s.dataset.col === "Provinsi") fillSel(); apply(); }));
+  let t; host.querySelector("#q").addEventListener("input", () => { clearTimeout(t); t = setTimeout(apply, 250); });
+  host.querySelector("#prev").addEventListener("click", () => { page--; render(); });
+  host.querySelector("#next").addEventListener("click", () => { page++; render(); });
+  host.querySelector("#csv").addEventListener("click", () => {
+    const qv = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const csv = "﻿" + [D.cols.map(qv).join(";")].concat(rows.map((r) => r.map(qv).join(";"))).join("\r\n");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    a.download = `${name}_kdkmp_tw4_2026.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  });
+  fillSel();
+  const iProv = filt.indexOf("Provinsi"), iKab = filt.indexOf("Kabupaten/Kota");
+  if (SCOPE.prov && iProv >= 0) { sels[iProv].value = SCOPE.prov; fillSel(); if (SCOPE.kab && iKab >= 0) sels[iKab].value = SCOPE.kab; apply(); }
+  else render();
+}
+
+$("#xlsx").addEventListener("click", async () => {
+  const b = $("#xlsx"); const x = MAN.xlsx; b.disabled = true;
+  try {
+    b.textContent = `Mengunduh… (${(x.bytes / 1e6).toLocaleString("id-ID", { maximumFractionDigits: 1 })} MB)`;
+    const u8 = await chunks("xlsx", x.chunks);
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([u8], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+    a.download = x.name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  } catch (e) { alert("Gagal mengunduh: " + (e.message || e)); }
+  finally { b.disabled = false; b.textContent = "Unduh Excel BNBA"; }
+});
+</script>
+</body>
+</html>
