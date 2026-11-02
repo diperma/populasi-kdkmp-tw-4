@@ -369,11 +369,20 @@ function readerCoverageText(man) {
   if (number(k.lahan) && number(k.stale_gerai) && k.stale_gerai <= k.lahan) parts.push("Gerai pada sumber portal terbaru: " + (k.lahan - k.stale_gerai).toLocaleString("id-ID") + " (kandidat dikurangi retensi; bukan bukti kelengkapan nasional)");
   return parts.join(" · ");
 }
+function snapshotUpdatedText(man) {
+  const raw = man?.source_dates?.portal_latest;
+  if (typeof raw !== "string") return "Terakhir diperbarui: belum tersedia";
+  const compact = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(?:\.(\d+))?Z$/.exec(raw);
+  const iso = compact ? `${compact[1]}-${compact[2]}-${compact[3]}T${compact[4]}:${compact[5]}:${compact[6]}.${(compact[7] || "0").slice(0, 3).padEnd(3, "0")}Z` : raw;
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(iso)) return "Terakhir diperbarui: belum tersedia";
+  const date = new Date(iso);
+  if (!Number.isFinite(date.getTime())) return "Terakhir diperbarui: belum tersedia";
+  const day = new Intl.DateTimeFormat("id-ID", { timeZone: "Asia/Jakarta", day: "numeric", month: "long", year: "numeric" }).format(date);
+  const time = new Intl.DateTimeFormat("id-ID", { timeZone: "Asia/Jakarta", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(date);
+  return `Terakhir diperbarui: ${day}, ${time} WIB`;
+}
 function snapshotSourceText(man) {
-  const dates = man.source_dates || {};
-  const dateText = Object.entries(dates).map(([k, v]) => k + ": " + (typeof v === "object" ? JSON.stringify(v) : v)).join(" · ");
-  const warnings = Array.isArray(man.warnings) ? man.warnings.map(w => typeof w === "string" ? w : JSON.stringify(w)).join(" · ") : (man.warnings ? String(man.warnings) : "");
-  return (dateText ? "Tanggal sumber — " + dateText : "Tanggal sumber belum tersedia (data legacy).") + " · Sarpras menggunakan sumber lama/parsial; nilai tidak diketahui bukan nol atau bukti lengkap. Perlu verifikasi lapangan." + (warnings ? " · " + warnings : "") + (readerCoverageText(man) ? " · " + readerCoverageText(man) : "");
+  return snapshotUpdatedText(man) + ". Sarpras menggunakan data historis/parsial; data yang belum diketahui bukan berarti nol. Perlu verifikasi lapangan.";
 }
 // Latest progress may legitimately be zero or unknown; only legacy snapshots use the historic column.
 function readerProgress(row, legacy) {
@@ -448,7 +457,7 @@ const DESC = {
 
 function start() {
   $("#login").classList.add("hidden"); $("#app").classList.remove("hidden");
-  $("#foot").textContent = "Sumber: " + MAN.sumber + ". " + snapshotSourceText(MAN);
+  $("#foot").textContent = "Sumber: Portal KDKMP. Sarpras menggunakan data historis/parsial; data yang belum diketahui bukan berarti nol. Perlu verifikasi lapangan.";
   setKpi(nasionalKpi(), ROOT_LABEL());
   $("#tabs").innerHTML = TABS.map(([id, l]) => {
     const n = MAN.datasets[id] ? ` <span class="z">(${fmt(MAN.datasets[id].rows)})</span>` : "";
@@ -489,7 +498,7 @@ function setKpi(m, label) {
     [m.k1, readerK1Label(MAN), "var(--ink)"], [m.k2, "(2) Belum terbangun,\nmandek > 3 bulan", "var(--red)"],
     [m.k3, "(3) Belum memiliki\nlahan", "var(--ink)"], [m.k4, "(4) Sudah terbangun\ndan beroperasi", "var(--blue)"]];
   $("#kpis").innerHTML = K.map(([n, l, c]) => `<div class="kpi" style="border-left-color:${c}"><div class="n" style="color:${c}">${fmt(n)}</div><div class="l">${esc(l).replace("\n", "<br>")}</div></div>`).join("");
-  $("#meta").textContent = `BNBA populasi KDKMP · ${label} · sumber portal ${MAN.source_dates?.portal_latest ?? MAN.source_dates?.portal_baseline ?? "historis (legacy)"}`;
+  $("#meta").textContent = `${label} · ${snapshotUpdatedText(MAN)}`;
 }
 const nasionalKpi = () => ({ pop: MAN.kpi.populasi, lahan: MAN.kpi.lahan, terb: MAN.kpi.terbangun, k1: MAN.kpi.k1, k2: MAN.kpi.k2, k3: MAN.kpi.k3, k4: MAN.kpi.k4, k5: MAN.kpi.k5, lapor: MAN.kpi.belum_lapor });
 const ROOT_LABEL = () => MAN && MAN.pw_nama ? `Wilayah ${MAN.pw_nama.replace("Perwakilan BPKP ", "Perwakilan ")}` : "Nasional";
