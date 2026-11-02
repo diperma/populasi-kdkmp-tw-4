@@ -282,7 +282,110 @@ const isBpkp = (u) => !!u && u.emailVerified && /^[^@]+@bpkp\.go\.id$/i.test(u.e
 const setErr = (m) => { $("#err").textContent = m || ""; };
 const busy = (on, label) => { $("#loginBtn").disabled = on; $("#loginLabel").textContent = label || "Masuk dengan Akun BPKP"; };
 
-let MAN = null; const CACHE = {}; let CUR = "ringkasan";
+// VERSIONED_READER_BEGIN
+// Kept inline in both preview pages: deployable without an extra script dependency.
+function createSnapshotReader(read, alive = () => true) {
+  const pins = new Map(), cache = new Map();
+  let closed = false;
+  const check = () => { if (closed || !alive()) throw new Error("Sesi data telah berakhir."); };
+  const get = async (col, id) => { check(); const value = await read(col, id); check(); return value; };
+  const parse = (doc) => {
+    if (!doc || typeof doc.json !== "string") throw new Error("Manifest tidak valid.");
+    const man = JSON.parse(doc.json);
+    if (!man || !man.datasets || typeof man.datasets !== "object" || Array.isArray(man.datasets)) throw new Error("Dataset manifest tidak valid.");
+    return man;
+  };
+  const pin = (col, pre) => {
+    check();
+    const scope = JSON.stringify([col, pre]);
+    if (!pins.has(scope)) pins.set(scope, (async () => {
+      const pointer = await get(col, pre + "active");
+      if (pointer === null) {
+        const man = parse(await get(col, pre + "manifest"));
+        if (man.schema_version === 2) throw new Error("Manifest versi 2 memerlukan pointer active.");
+        return { col, pre, man, version: "legacy", legacy: true };
+      }
+      if (pointer.schema_version !== 2 || typeof pointer.snapshot_id !== "string" || !/^[A-Za-z0-9_-]{1,160}$/.test(pointer.snapshot_id)) throw new Error("Pointer snapshot tidak valid.");
+      const version = pointer.snapshot_id;
+      const man = parse(await get(col, pre + "v_" + version + "_manifest"));
+      if (man.schema_version !== 2 || man.snapshot_id !== version) throw new Error("Versi manifest tidak cocok dengan pointer.");
+      return { col, pre, man, version, legacy: false };
+    })());
+    return pins.get(scope);
+  };
+  const unpack = async (b64) => {
+    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    return JSON.parse(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"))).text());
+  };
+  const validate = (data, spec) => {
+    if (!data || !Array.isArray(data.cols) || !data.cols.every(c => typeof c === "string") || !Array.isArray(data.rows) || data.rows.length !== spec.rows || !data.rows.every(r => Array.isArray(r) && r.length === data.cols.length)) throw new Error("Jumlah baris/kolom dataset tidak cocok.");
+    if (Array.isArray(spec.cols) ? JSON.stringify(data.cols) !== JSON.stringify(spec.cols) : data.cols.length !== spec.cols) throw new Error("Kolom dataset tidak cocok.");
+    return data;
+  };
+  const dataset = async (col, pre, name) => {
+    const p = await pin(col, pre); check();
+    const key = JSON.stringify([col, pre, p.version, name]);
+    if (!cache.has(key)) cache.set(key, (async () => {
+      const spec = p.man.datasets[name];
+      if (!spec || !Number.isSafeInteger(spec.chunks) || spec.chunks < 1 || !Number.isSafeInteger(spec.rows) || spec.rows < 0 || !(Array.isArray(spec.cols) || (Number.isSafeInteger(spec.cols) && spec.cols >= 0))) throw new Error("Spesifikasi dataset tidak valid: " + name);
+      if (!p.legacy && (!Array.isArray(spec.chunk_sha256) || spec.chunk_sha256.length !== spec.chunks || !spec.chunk_sha256.every(h => typeof h === "string" && /^[a-f0-9]{64}$/i.test(h)))) throw new Error("Hash chunk tidak valid.");
+      const parts = await Promise.all(Array.from({ length: spec.chunks }, async (_, i) => {
+        const id = pre + (p.legacy ? "" : "v_" + p.version + "_") + name + "_" + i;
+        const chunk = await get(col, id);
+        if (!chunk || typeof chunk.d !== "string" || !chunk.d.length) throw new Error("Chunk tidak tersedia: " + id);
+        if (!p.legacy) {
+          // Hash covers the exact UTF-8 base64 fragment stored in Firestore.
+          const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(chunk.d))), b => b.toString(16).padStart(2, "0")).join("");
+          check();
+          if (hash !== spec.chunk_sha256[i].toLowerCase()) throw new Error("Integritas chunk gagal: " + id);
+        }
+        return chunk.d;
+      }));
+      let data;
+      if (p.legacy && col === "populasi_pw") {
+        // Old PW publisher compressed each row partition separately.
+        const blocks = await Promise.all(parts.map(unpack));
+        const cols = blocks[0].cols;
+        if (!blocks.every(b => Array.isArray(b.rows) && JSON.stringify(b.cols) === JSON.stringify(cols))) throw new Error("Kolom chunk legacy tidak cocok.");
+        data = { ...blocks[0], rows: blocks.flatMap(b => b.rows) };
+      } else data = await unpack(parts.join(""));
+      check(); return validate(data, spec);
+    })());
+    const result = await cache.get(key); check(); return result;
+  };
+  return { pin, dataset, clear() { closed = true; pins.clear(); cache.clear(); } };
+}
+function readerK1Label(man) {
+  return man?.schema_version === 2 ? "(1) Bukti sarpras lama (parsial)" : "(1) Terbangun dengan kelengkapan";
+}
+function readerCoverageText(man) {
+  if (man?.schema_version !== 2) return "";
+  const k = man.kpi || {}, number = v => Number.isSafeInteger(v) && v >= 0;
+  const parts = [];
+  const unknown = k.sarpras_unknown_completed ?? k.unknown_completed;
+  if (number(unknown)) parts.push("Gedung selesai dengan sarpras belum diketahui: " + unknown.toLocaleString("id-ID"));
+  if (number(k.lahan)) parts.push("Gerai dalam kandidat (termasuk retensi): " + k.lahan.toLocaleString("id-ID"));
+  if (number(k.stale_gerai)) parts.push("Gerai lama dipertahankan (stale): " + k.stale_gerai.toLocaleString("id-ID"));
+  if (number(k.lahan) && number(k.stale_gerai) && k.stale_gerai <= k.lahan) parts.push("Gerai pada sumber portal terbaru: " + (k.lahan - k.stale_gerai).toLocaleString("id-ID") + " (kandidat dikurangi retensi; bukan bukti kelengkapan nasional)");
+  return parts.join(" · ");
+}
+function snapshotSourceText(man) {
+  const dates = man.source_dates || {};
+  const dateText = Object.entries(dates).map(([k, v]) => k + ": " + (typeof v === "object" ? JSON.stringify(v) : v)).join(" · ");
+  const warnings = Array.isArray(man.warnings) ? man.warnings.map(w => typeof w === "string" ? w : JSON.stringify(w)).join(" · ") : (man.warnings ? String(man.warnings) : "");
+  return (dateText ? "Tanggal sumber — " + dateText : "Tanggal sumber belum tersedia (data legacy).") + " · Sarpras menggunakan sumber lama/parsial; nilai tidak diketahui bukan nol atau bukti lengkap. Perlu verifikasi lapangan." + (warnings ? " · " + warnings : "") + (readerCoverageText(man) ? " · " + readerCoverageText(man) : "");
+}
+// Latest progress may legitimately be zero or unknown; only legacy snapshots use the historic column.
+function readerProgress(row, legacy) {
+  return row["Progres terbaru (%)"] ?? (legacy ? row["Progres 6 Okt (%)"] : null) ?? null;
+}
+function readerEvidenceNumber(value, format = String) {
+  return value == null || value === "" ? "belum diketahui" : format(value);
+}
+// VERSIONED_READER_END
+
+let MAN = null, READER = null, SESSION = 0, LEGACY = true; let CUR = "ringkasan";
+function resetReader() { SESSION++; if (READER) READER.clear(); READER = null; MAN = null; $("#app").classList.add("hidden"); $("#login").classList.remove("hidden"); $("#view").replaceChildren(); $("#kpis").replaceChildren(); $("#who").textContent = ""; }
 let BASE = { col: "populasi_tw4", pre: "" };   // D302: nasional; Perwakilan: populasi_pw/<Pxx>_*
 
 $("#loginBtn").addEventListener("click", async () => {
@@ -294,43 +397,38 @@ $("#loginBtn").addEventListener("click", async () => {
     busy(false);
   }
 });
-$("#logout").addEventListener("click", () => signOut(auth));
+$("#logout").addEventListener("click", () => { resetReader(); return signOut(auth); });
 
 onAuthStateChanged(auth, async (u) => {
-  if (!u) { MAN = null; for (const k in CACHE) delete CACHE[k]; $("#app").classList.add("hidden"); $("#login").classList.remove("hidden"); busy(false); return; }
+  resetReader(); const session = SESSION;
+  const current = () => session === SESSION && auth.currentUser === u;
+  if (!u) { busy(false); return; }
   if (!isBpkp(u)) { setErr(`Akun ${u.email || ""} bukan akun BPKP. Gunakan akun @bpkp.go.id.`); await signOut(auth); return; }
   busy(true, "Memuat data…");
   try {
     const ak = await getDoc(doc(db, "akses", u.email.toLowerCase()));
+    if (!current()) return;
     if (!ak.exists()) { setErr(`Akun ${u.email} belum terdaftar untuk aplikasi ini. Akses diberikan kepada pegawai D302 dan pegawai Perwakilan BPKP sesuai daftar pegawai; hubungi Tim APP KDKMP (D302) bila perlu akses.`); await signOut(auth); return; }
     const A = ak.data();
     BASE = A.role === "D302" ? { col: "populasi_tw4", pre: "" } : { col: "populasi_pw", pre: A.pw + "_" };
-    for (const k in CACHE) delete CACHE[k];
+    READER = createSnapshotReader(async (col, id) => { const s = await getDoc(doc(db, col, id)); return s.exists() ? s.data() : null; }, current);
     Object.assign(SCOPE, { prov: "", kab: "", kec: "", kecName: "" });
-    const snap = await getDoc(doc(db, BASE.col, BASE.pre + "manifest"));
-    if (!snap.exists()) throw new Error("Data belum tersedia.");
-    MAN = JSON.parse(snap.data().json);
+    const pinned = await READER.pin(BASE.col, BASE.pre);
+    if (!current()) return;
+    MAN = pinned.man; LEGACY = pinned.legacy;
     $("#who").textContent = `${u.email} · ${A.role === "D302" ? "D302 · nasional" : A.unit}`;
     start();
   } catch (e) {
+    if (!current()) return;
     setErr(e && e.code === "permission-denied" ? "Akses ditolak. Pastikan memakai akun @bpkp.go.id." : "Gagal memuat data: " + (e.message || e));
     await signOut(auth);
-  } finally { busy(false); }
+  } finally { if (current()) busy(false); }
 });
 
 // ---- pemuatan dataset (potongan base64 gzip di Firestore)
-async function chunks(prefix, n) {
-  const parts = await Promise.all(Array.from({ length: n }, (_, i) => getDoc(doc(db, BASE.col, `${BASE.pre}${prefix}_${i}`)).then((s) => s.data().d)));
-  const bin = atob(parts.join("")); const u8 = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
-  return u8;
-}
 async function dataset(name) {
-  if (CACHE[name]) return CACHE[name];
-  const meta = MAN.datasets[name];
-  const gz = await chunks(name, meta.chunks);
-  const txt = await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
-  return (CACHE[name] = JSON.parse(txt));
+  if (!READER) throw new Error("Sesi data telah berakhir.");
+  return READER.dataset(BASE.col, BASE.pre, name);
 }
 
 // ---- tampilan
@@ -340,7 +438,7 @@ const TABS = [
 ];
 const SUBS = [["drill", "Rekap wilayah (klik untuk drilldown)"], ["riwayat", "Riwayat 2 Okt vs 6 Okt"], ["rekap_uji", "Rekap uji petik (beroperasi)"]];
 const DESC = {
-  gerai: "Seluruh gerai pada lahan terpetakan di portal (6 Okt 2026) beserta status pembangunan, keterlambatan, kelengkapan sarpras, dan penanda kategori (1)–(5).",
+  gerai: "Gerai pada lahan terpetakan: progres terbaru sesuai tanggal sumber snapshot, termasuk catatan lama yang dipertahankan. Sarpras bersumber historis/parsial; nilai tidak diketahui bukan bukti lengkap.",
   beroperasi: "Daftar resmi 1.075 KDKMP sudah beroperasi beserta hasil observasi, data penduduk, hasil verval SIMKOPDES, dan kategori uji petik.",
   mandek: "Gedung belum terbangun dengan keterlambatan lebih dari 3 bulan dari target (parameter default), diurutkan dari yang paling lama.",
   terbangun: "Gedung terbangun (progres 100%) dengan status per item sarpras.",
@@ -350,7 +448,7 @@ const DESC = {
 
 function start() {
   $("#login").classList.add("hidden"); $("#app").classList.remove("hidden");
-  $("#foot").textContent = "Sumber: " + MAN.sumber + ".";
+  $("#foot").textContent = "Sumber: " + MAN.sumber + ". " + snapshotSourceText(MAN);
   setKpi(nasionalKpi(), ROOT_LABEL());
   $("#tabs").innerHTML = TABS.map(([id, l]) => {
     const n = MAN.datasets[id] ? ` <span class="z">(${fmt(MAN.datasets[id].rows)})</span>` : "";
@@ -388,16 +486,17 @@ function fromRekap(D, r) {
 function setKpi(m, label) {
   const K = [[m.pop, "Populasi KDKMP", "var(--navy)"], [m.lahan, "Lahan terpetakan\n(gerai di portal)", "var(--navy)"],
     [m.terb, "Gedung terbangun\n(progres 100%)", "var(--navy)"], [m.k5, "(5) Sedang progres\nmembangun", "var(--ink)"],
-    [m.k1, "(1) Terbangun dengan\nkelengkapan", "var(--ink)"], [m.k2, "(2) Belum terbangun,\nmandek > 3 bulan", "var(--red)"],
+    [m.k1, readerK1Label(MAN), "var(--ink)"], [m.k2, "(2) Belum terbangun,\nmandek > 3 bulan", "var(--red)"],
     [m.k3, "(3) Belum memiliki\nlahan", "var(--ink)"], [m.k4, "(4) Sudah terbangun\ndan beroperasi", "var(--blue)"]];
   $("#kpis").innerHTML = K.map(([n, l, c]) => `<div class="kpi" style="border-left-color:${c}"><div class="n" style="color:${c}">${fmt(n)}</div><div class="l">${esc(l).replace("\n", "<br>")}</div></div>`).join("");
-  $("#meta").textContent = `BNBA populasi KDKMP · ${label} · data portal 6 Okt 2026`;
+  $("#meta").textContent = `BNBA populasi KDKMP · ${label} · sumber portal ${MAN.source_dates?.portal_latest ?? MAN.source_dates?.portal_baseline ?? "historis (legacy)"}`;
 }
 const nasionalKpi = () => ({ pop: MAN.kpi.populasi, lahan: MAN.kpi.lahan, terb: MAN.kpi.terbangun, k1: MAN.kpi.k1, k2: MAN.kpi.k2, k3: MAN.kpi.k3, k4: MAN.kpi.k4, k5: MAN.kpi.k5, lapor: MAN.kpi.belum_lapor });
 const ROOT_LABEL = () => MAN && MAN.pw_nama ? `Wilayah ${MAN.pw_nama.replace("Perwakilan BPKP ", "Perwakilan ")}` : "Nasional";
 const scopeLabel = () => SCOPE.kec ? `Kec. ${SCOPE.kecName}, ${SCOPE.kab}` : SCOPE.kab ? SCOPE.kab : SCOPE.prov ? SCOPE.prov : ROOT_LABEL();
 
 async function drill(host) {
+  const session = SESSION;
   const rid = (host._rid = (host._rid || 0) + 1);
   const crumbs = [[ROOT_LABEL(), () => { Object.assign(SCOPE, { prov: "", kab: "", kec: "", kecName: "" }); drill(host); }]];
   if (SCOPE.prov) crumbs.push([SCOPE.prov, () => { Object.assign(SCOPE, { kab: "", kec: "", kecName: "" }); drill(host); }]);
@@ -417,7 +516,7 @@ async function drill(host) {
     let rows, total, cols, csvRows;
     if (level === "prov" || level === "kab") {
       const D = await dataset(level === "prov" ? "rekap_prov" : "rekap_kab");
-      if (host._rid !== rid) return;
+      if (session !== SESSION || host._rid !== rid || !host.isConnected) return;
       const iP = D.cols.indexOf("Provinsi"), iK = D.cols.indexOf("Kabupaten/Kota");
       const src = D.rows.filter((r) => r[iP] && !String(r[iP]).toUpperCase().startsWith("TOTAL") && (level === "prov" || r[iP] === SCOPE.prov));
       rows = src.map((r) => ({ name: level === "prov" ? r[iP] : r[iK], m: fromRekap(D, r) }));
@@ -430,7 +529,7 @@ async function drill(host) {
     } else {
       dv.innerHTML = `<div class="loading">Memuat data desa (populasi dan gerai)…</div>`;
       const [P, G] = await Promise.all([dataset("populasi"), dataset("gerai")]);
-      if (host._rid !== rid) return;
+      if (session !== SESSION || host._rid !== rid || !host.isConnected) return;
       const pc = Object.fromEntries(P.cols.map((c, i) => [c, i])), gc = Object.fromEntries(G.cols.map((c, i) => [c, i]));
       const pRows = P.rows.filter((r) => r[pc["Provinsi"]] === SCOPE.prov && r[pc["Kabupaten/Kota"]] === SCOPE.kab);
       const gRows = G.rows.filter((r) => r[gc["Provinsi"]] === SCOPE.prov && r[gc["Kabupaten/Kota"]] === SCOPE.kab);
@@ -442,7 +541,7 @@ async function drill(host) {
         for (const r of gRows) {
           const o = get(kecCode(r[gc["Kode Desa"]]), r[gc["Kecamatan"]]); o.m.lahan++;
           const st = r[gc["Status pembangunan"]]; if (st === "Selesai") o.m.terb++; if (st === "Belum melapor progres") o.m.lapor++;
-          o.m.k1 += +(r[gc["(1) Terbangun dengan kelengkapan"]] || 0); o.m.k2 += +(r[gc["(2) Mandek > 3 bulan"]] || 0);
+          o.m.k1 += r[gc["(1) Terbangun dengan kelengkapan"]] === 1 ? 1 : 0; o.m.k2 += +(r[gc["(2) Mandek > 3 bulan"]] || 0);
           o.m.k4 += +(r[gc["(4) Beroperasi"]] || 0); o.m.k5 += +(r[gc["(5) Sedang progres"]] || 0);
         }
         rows = [...by.values()].sort((a, b) => String(a.name).localeCompare(String(b.name), "id"));
@@ -459,22 +558,22 @@ async function drill(host) {
         const m = { k1: 0, k2: 0, k3: 0, k4: 0, k5: 0, pop: pk.length, lahan: gk.length, terb: 0, lapor: 0 };
         for (const { p } of list) if (p && p[pc["Status lahan gerai"]] === "Belum terpetakan") m.k3++;
         for (const r of gk) { const st = r[gc["Status pembangunan"]]; if (st === "Selesai") m.terb++; if (st === "Belum melapor progres") m.lapor++;
-          m.k1 += +(r[gc["(1) Terbangun dengan kelengkapan"]] || 0); m.k2 += +(r[gc["(2) Mandek > 3 bulan"]] || 0); m.k4 += +(r[gc["(4) Beroperasi"]] || 0); m.k5 += +(r[gc["(5) Sedang progres"]] || 0); }
+          m.k1 += r[gc["(1) Terbangun dengan kelengkapan"]] === 1 ? 1 : 0; m.k2 += +(r[gc["(2) Mandek > 3 bulan"]] || 0); m.k4 += +(r[gc["(4) Beroperasi"]] || 0); m.k5 += +(r[gc["(5) Sedang progres"]] || 0); }
         setKpi(m, scopeLabel());
-        const DC = ["Desa/Kelurahan", "Kode Desa", "NIK Koperasi", "Nama Koperasi", "Status lahan", "Status pembangunan", "Progres 6 Okt (%)", "Hari lewat target", "Kategori keterlambatan", "Status kelengkapan sarpras", "Item sarpras tiba/terpasang", "(1) Lengkap", "(2) Mandek", "(4) Beroperasi", "(5) Progres", "Peta"];
+        const DC = ["Desa/Kelurahan", "Kode Desa", "NIK Koperasi", "Nama Koperasi", "Status lahan", "Status pembangunan", "Progres terbaru (%)", "Hari lewat target", "Kategori keterlambatan", "Status kelengkapan sarpras", "Item sarpras tiba/terpasang", "(1) Lengkap", "(2) Mandek", "(4) Beroperasi", "(5) Progres", "Peta"];
         const line = ({ p, g }) => {
           const G_ = (c) => (g ? g[gc[c]] : null);
           return [p ? p[pc["Desa/Kelurahan"]] : G_("Desa/Kelurahan"), p ? p[pc["Kode Desa"]] : G_("Kode Desa"), p ? p[pc["NIK Koperasi"]] : G_("NIK Koperasi (master)"),
-            p ? p[pc["Nama Koperasi"]] : G_("Nama Koperasi (portal)"), p ? p[pc["Status lahan gerai"]] : "Terpetakan", G_("Status pembangunan"), G_("Progres 6 Okt (%)"),
+            p ? p[pc["Nama Koperasi"]] : G_("Nama Koperasi (portal)"), p ? p[pc["Status lahan gerai"]] : "Terpetakan", G_("Status pembangunan"), readerProgress({ "Progres terbaru (%)": G_("Progres terbaru (%)"), "Progres 6 Okt (%)": G_("Progres 6 Okt (%)") }, LEGACY),
             G_("Hari lewat target"), G_("Kategori keterlambatan"), G_("Status kelengkapan sarpras"), G_("Item sarpras tiba/terpasang"),
             G_("(1) Terbangun dengan kelengkapan"), G_("(2) Mandek > 3 bulan"), G_("(4) Beroperasi"), G_("(5) Sedang progres"), [G_("Latitude"), G_("Longitude")]];
         };
         const L = list.map(line);
-        const flag = (v) => v === 1 ? '<span class="ok">✓</span>' : '<span class="z">·</span>';
+        const flag = (v) => v == null ? '<span class="z" title="Belum diketahui">?</span>' : v === 1 ? '<span class="ok">✓</span>' : '<span class="z">·</span>';
         dv.innerHTML = `<div class="count">${fmt(L.length)} KDKMP/desa di Kec. ${esc(SCOPE.kecName)}</div><div class="tablewrap"><table><thead><tr>${DC.map((c) => `<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>` +
           L.map((r) => `<tr>${r.map((v, i) => {
             if (i === 15) return `<td>${v[0] && v[1] ? `<a href="https://www.google.com/maps?q=${encodeURIComponent(v[0] + "," + v[1])}" target="_blank" rel="noopener">Buka</a>` : '<span class="z">–</span>'}</td>`;
-            if (i >= 11) return `<td class="num">${v === null ? '<span class="z">–</span>' : flag(v)}</td>`;
+            if (i >= 11) return `<td class="num">${flag(v)}</td>`;
             if (v === null || v === "" || v === "-") return `<td class="z">–</td>`;
             if (i === 3) return `<td class="wrap">${esc(v)}</td>`;
             if (typeof v === "number") return `<td class="num">${Number.isInteger(v) ? fmt(v) : v.toLocaleString("id-ID", { maximumFractionDigits: 2 })}</td>`;
@@ -493,7 +592,7 @@ async function drill(host) {
       const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
       a.download = `rekap_${scopeLabel().replace(/[^A-Za-z0-9]+/g, "_")}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     };
-  } catch (e) { if (host._rid === rid) dv.innerHTML = `<div class="err">Gagal memuat data: ${esc(e.message || e)}</div>`; }
+  } catch (e) { if (session === SESSION && host.isConnected && host._rid === rid) dv.innerHTML = `<div class="err">Gagal memuat data: ${esc(e.message || e)}</div>`; }
 }
 function sumM(rows) {
   const t = { k1: 0, k2: 0, k3: 0, k4: 0, k5: 0, pop: 0, lahan: 0, terb: 0, lapor: 0 };
@@ -527,11 +626,12 @@ function renderLevel(dv, rows, tot, label, onPick) {
 
 const PAGE = 100;
 async function table(name, host, desc, compact) {
+  const session = SESSION;
   const rid = (host._rid = (host._rid || 0) + 1);
   host.innerHTML = `<div class="loading">Memuat ${fmt(MAN.datasets[name].rows)} baris…</div>`;
   let D;
-  try { D = await dataset(name); } catch (e) { if (host._rid === rid) host.innerHTML = `<div class="err">Gagal memuat data: ${esc(e.message || e)}</div>`; return; }
-  if (host._rid !== rid || !host.isConnected) return;   // pengguna sudah pindah tab
+  try { D = await dataset(name); } catch (e) { if (session === SESSION && host.isConnected && host._rid === rid) host.innerHTML = `<div class="err">Gagal memuat data: ${esc(e.message || e)}</div>`; return; }
+  if (session !== SESSION || host._rid !== rid || !host.isConnected) return;   // pengguna sudah pindah tab
   const ci = Object.fromEntries(D.cols.map((c, i) => [c, i]));
   const latI = ci["Latitude"], lonI = ci["Longitude"];
   const filt = D.filters.filter((f) => f in ci);
