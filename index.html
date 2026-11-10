@@ -480,11 +480,18 @@ async function sarprasPortalDigest(text, subtle, Encoder = TextEncoder) {
 function sarprasShardIndex(digest) {
   return digest && digest.length ? (digest[0] & 255) % 8 : -1;
 }
+// PW codes are exactly P01–P36 (Lampiran II Peraturan BPKP No. 5/2026); 'ALL' or any other value is refused.
+function isValidPwCode(pw) { return typeof pw === "string" && /^P(?:0[1-9]|1[0-9]|2[0-9]|3[0-6])$/.test(pw); }
+// National read access: D302 and the read-only NATIONAL_VIEWER. Never grants mutation rights.
+function canReadNational(me) { return !!me && (me.role === "D302" || me.role === "NATIONAL_VIEWER"); }
+function nationalReadScope(me) { return canReadNational(me) ? ["populasi_tw4", ""] : null; }
+// Supported roles: D302, NATIONAL_VIEWER, or PW with a valid P01–P36 code. Anything else fails closed.
+function isSupportedRole(me) { return !!me && (canReadNational(me) || (me.role === "PW" && isValidPwCode(me.pw))); }
 function sarprasScope(me) {
   if (!me) return null;
-  if (me.role === "D302") return ["populasi_tw4", ""];
-  // PW codes are exactly P01–P36 (Lampiran II Peraturan BPKP No. 5/2026); 'ALL' or any other value is refused.
-  if (me.role === "PW" && typeof me.pw === "string" && /^P(?:0[1-9]|1[0-9]|2[0-9]|3[0-6])$/.test(me.pw)) return ["populasi_pw", me.pw + "_"];
+  const national = nationalReadScope(me);
+  if (national) return national;
+  if (me.role === "PW" && isValidPwCode(me.pw)) return ["populasi_pw", me.pw + "_"];
   return null; // Never fall back from a PW account to the national scope.
 }
 const sarprasObj = (cols, values) => {
@@ -676,14 +683,18 @@ onAuthStateChanged(auth, async (u) => {
     if (!current()) return;
     if (!ak.exists()) { setErr(`Akun ${u.email} belum terdaftar untuk aplikasi ini. Akses diberikan kepada pegawai D302 dan pegawai Perwakilan BPKP sesuai daftar pegawai; hubungi Tim APP KDKMP (D302) bila perlu akses.`); await signOut(auth); return; }
     const A = ak.data();
-    ME = { email: u.email, role: A.role, pw: A.pw };
-    BASE = A.role === "D302" ? { col: "populasi_tw4", pre: "" } : { col: "populasi_pw", pre: A.pw + "_" };
+    const candidate = { email: u.email, role: A.role, pw: A.pw };
+    // Validate the role before any dataset read; unknown roles and invalid PW codes fail closed.
+    const scope = sarprasScope(candidate);
+    if (!scope) { ME = null; throw new Error("Peran akun tidak dikenali atau kode Perwakilan tidak valid."); }
+    ME = candidate;
+    BASE = { col: scope[0], pre: scope[1] };
     READER = createSnapshotReader(async (col, id) => { const s = await getDoc(doc(db, col, id)); return s.exists() ? s.data() : null; }, current);
     Object.assign(SCOPE, { prov: "", kab: "", kec: "", kecName: "" });
     const pinned = await READER.pin(BASE.col, BASE.pre);
     if (!current()) return;
     MAN = pinned.man; LEGACY = pinned.legacy;
-    $("#who").textContent = `${u.email} · ${A.role === "D302" ? "D302 · nasional" : A.unit}`;
+    $("#who").textContent = `${u.email} · ${A.role === "D302" ? "D302 · nasional" : A.role === "NATIONAL_VIEWER" ? "Nasional · baca-saja" : A.unit}`;
     start();
   } catch (e) {
     if (!current()) return;
