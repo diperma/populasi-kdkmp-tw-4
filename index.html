@@ -407,8 +407,19 @@ function snapshotUpdatedText(man) {
   const time = new Intl.DateTimeFormat("id-ID", { timeZone: "Asia/Jakarta", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(date);
   return `Terakhir diperbarui: ${day}, ${time} WIB`;
 }
+function operationalSourceText(man) {
+  const rms = man?.operational_rms;
+  if (!rms || rms.definition !== "positive-cumulative-general-sales") return "Sumber operasional historis; belum menggunakan pembaruan MonRMS.";
+  const text = value => typeof value === "string" ? value.trim() : "";
+  const start = text(rms.period_start), end = text(rms.period_end);
+  const period = start && end ? ` periode ${start} sampai ${end}` : "";
+  let sentence = `KDKMP yang beroperasi berdasarkan penjualan umum kumulatif positif MonRMS${period}.`;
+  const stamp = snapshotUpdatedText({ source_dates: { portal_latest: text(rms.fetched_at_utc) } });
+  if (!stamp.endsWith("belum tersedia")) sentence += " " + stamp.replace("Terakhir diperbarui", "MonRMS diambil") + ".";
+  return sentence;
+}
 function snapshotSourceText(man) {
-  return snapshotUpdatedText(man) + ". Sarpras menggunakan data historis/parsial; data yang belum diketahui bukan berarti nol. Perlu verifikasi lapangan.";
+  return snapshotUpdatedText(man) + ". " + operationalSourceText(man) + " Sarpras menggunakan data historis/parsial; data yang belum diketahui bukan berarti nol. Perlu verifikasi lapangan.";
 }
 // Latest progress may legitimately be zero or unknown; only legacy snapshots use the historic column.
 function readerProgress(row, legacy) {
@@ -714,10 +725,10 @@ const TABS = [
   ["ringkasan", "Ringkasan"], ["gerai", "Gerai"], ["beroperasi", "Beroperasi"], ["mandek", "Mandek > 3 bln"],
   ["terbangun", "Terbangun & Sarpras"], ["belum_lahan", "Belum Lahan"], ["populasi", "Populasi"],
 ];
-const SUBS = [["drill", "Rekap wilayah (klik untuk drilldown)"], ["riwayat", "Riwayat 2 Okt vs 6 Okt"], ["rekap_uji", "Rekap uji petik (beroperasi)"]];
+const SUBS = [["drill", "Rekap wilayah (klik untuk drilldown)"], ["riwayat", "Riwayat 2 Okt vs 6 Okt"], ["rekap_uji", "Rekap uji petik historis 6 Okt (beroperasi)"]];
 const DESC = {
   gerai: "Gerai pada lahan terpetakan: progres terbaru sesuai tanggal sumber snapshot, termasuk catatan lama yang dipertahankan. Sarpras bersumber historis/parsial; nilai tidak diketahui bukan bukti lengkap.",
-  beroperasi: "Daftar resmi 1.075 KDKMP sudah beroperasi beserta hasil observasi, data penduduk, hasil verval SIMKOPDES, dan kategori uji petik.",
+  beroperasi: "Daftar KDKMP yang beroperasi berdasarkan penjualan umum kumulatif positif di MonRMS (bukan hanya penjualan hari ini). Hasil observasi historis, data penduduk, verval SIMKOPDES, dan kategori uji petik dilampirkan hanya jika identitas cocok pasti.",
   mandek: "Gedung belum terbangun dengan keterlambatan lebih dari 3 bulan dari target (parameter default), diurutkan dari yang paling lama.",
   terbangun: "Gedung terbangun (progres 100%) dengan status per item sarpras.",
   belum_lahan: "KDKMP pada master 84.070 yang kode desanya belum ada di data pemetaan lahan portal.",
@@ -761,11 +772,97 @@ function fromRekap(D, r) {
   const g = (pre) => { const i = D.cols.findIndex((c) => c.startsWith(pre)); return i < 0 ? 0 : Number(r[i] || 0); };
   return { k1: g("(1)"), k2: g("(2)"), k3: g("(3)"), k4: g("(4)"), k5: g("(5)"), pop: g("Populasi"), lahan: g("Lahan terpetakan"), terb: g("Gedung terbangun"), lapor: g("Belum melapor") };
 }
+
+// OPERATIONAL_DRILL_BEGIN
+// Helper murni (tanpa state global) untuk level kecamatan/desa. Input: baris berbentuk objek
+// {namaKolom: nilai} yang sudah difilter prov/kab (lihat opRowObjects). (4) Beroperasi dihitung
+// HANYA dari baris dataset "beroperasi" (O), tidak pernah dari flag historis gerai.
+const opHasCode = (v) => String(v == null ? "" : v).trim() !== "";
+const opText = (v) => String(v == null ? "" : v).trim();
+const opDistrictCode = (code) => String(code || "").slice(0, 8);
+const opZero = () => ({ k1: 0, k2: 0, k3: 0, k4: 0, k5: 0, pop: 0, lahan: 0, terb: 0, lapor: 0 });
+function opRowObjects(D, prov, kab) {
+  return D.rows.map((r) => { const o = {}; D.cols.forEach((c, i) => { o[c] = r[i]; }); return o; })
+    .filter((o) => o["Provinsi"] === prov && o["Kabupaten/Kota"] === kab);
+}
+// Nama koperasi baris operasional (RMS): urutan fallback sesuai brief.
+function opCoopName(o) {
+  for (const c of ["Nama Koperasi", "Nama Koperasi (sumber)", "Nama Koperasi (RMS)", "Nama Koperasi (portal)"]) if (opHasCode(o[c])) return o[c];
+  return null;
+}
+// Indeks kecamatan dari seluruh P/G/O: baris berkode -> 8 digit pertama; baris tanpa kode digabung ke
+// grup berkode hanya bila nama Kecamatan cocok persis dengan TEPAT SATU kode; selain itu kunci fallback.
+function opDistrictIndex(P, G, O) {
+  const names = new Map();
+  for (const r of [...P, ...G, ...O]) {
+    const name = opText(r["Kecamatan"]);
+    if (!opHasCode(r["Kode Desa"]) || !name) continue;
+    if (!names.has(name)) names.set(name, new Set());
+    names.get(name).add(opDistrictCode(r["Kode Desa"]));
+  }
+  const keyOf = (r) => {
+    if (opHasCode(r["Kode Desa"])) return opDistrictCode(r["Kode Desa"]);
+    const name = opText(r["Kecamatan"]), hit = names.get(name);
+    return name && hit && hit.size === 1 ? [...hit][0] : `nama:${name}`;
+  };
+  return { keyOf };
+}
+function opAddGerai(m, r) {
+  const st = r["Status pembangunan"]; if (st === "Selesai") m.terb++; if (st === "Belum melapor progres") m.lapor++;
+  m.k1 += r["(1) Terbangun dengan kelengkapan"] === 1 ? 1 : 0; m.k2 += +(r["(2) Mandek > 3 bulan"] || 0); m.k5 += +(r["(5) Sedang progres"] || 0);
+}
+// Grup kecamatan: master/gerai membentuk grup, lalu operasional menambah k4 (termasuk kecamatan hanya-ops).
+function opDistrictGroups(P, G, O) {
+  const idx = opDistrictIndex(P, G, O), by = new Map();
+  const get = (r) => {
+    const key = idx.keyOf(r), name = opText(r["Kecamatan"]);
+    if (!by.has(key)) by.set(key, { code: key, name: name || (key.startsWith("nama:") ? "(Tanpa nama kecamatan)" : key), m: opZero() });
+    const o = by.get(key); if (name && (o.name === key || o.name === "(Tanpa nama kecamatan)")) o.name = name; return o;
+  };
+  for (const r of P) { const o = get(r); o.m.pop++; if (r["Status lahan gerai"] === "Belum terpetakan") o.m.k3++; }
+  for (const r of G) { const o = get(r); o.m.lahan++; opAddGerai(o.m, r); }
+  for (const r of O) get(r).m.k4++;
+  return [...by.values()].sort((a, b) => String(a.name).localeCompare(String(b.name), "id"));
+}
+// Total desa: k4 = jumlah operasional di seluruh entri (terhubung ke master + berdiri sendiri).
+function opDesaTotals(list, pk, gk) {
+  const m = { ...opZero(), pop: pk.length, lahan: gk.length };
+  for (const r of pk) if (r["Status lahan gerai"] === "Belum terpetakan") m.k3++;
+  for (const r of gk) opAddGerai(m, r);
+  for (const e of list) m.k4 += e.ops.length;
+  return m;
+}
+// Rakit entri desa {p, g, ops[]}. Gerai terhubung ke master via Kode Desa tidak-kosong persis; operasional
+// terhubung ke master (bukan gerai) via Kode Desa tidak-kosong persis, selain itu berdiri sendiri (hanya RMS).
+function opDesaAssemble(P, G, O, districtKey) {
+  const idx = opDistrictIndex(P, G, O), inD = (r) => idx.keyOf(r) === districtKey;
+  const pk = P.filter(inD), gk = G.filter(inD), ok = O.filter(inD);
+  const gBy = new Map(); for (const r of gk) if (opHasCode(r["Kode Desa"])) gBy.set(r["Kode Desa"], r);
+  const masterCodes = new Set(pk.map((r) => r["Kode Desa"]).filter(opHasCode));
+  const opsBy = new Map(), opOnly = [];
+  for (const r of ok) {
+    const c = r["Kode Desa"];
+    if (opHasCode(c) && masterCodes.has(c)) { if (!opsBy.has(c)) opsBy.set(c, []); opsBy.get(c).push(r); } else opOnly.push(r);
+  }
+  const claimed = new Set(), seen = new Set();
+  const list = pk.map((r) => {
+    const k = r["Kode Desa"]; let ops = [];
+    if (opHasCode(k)) { seen.add(k); if (!claimed.has(k)) { claimed.add(k); ops = opsBy.get(k) || []; } }
+    return { p: r, g: opHasCode(k) ? gBy.get(k) || null : null, ops };
+  });
+  for (const r of gk) if (!opHasCode(r["Kode Desa"]) || !seen.has(r["Kode Desa"])) list.push({ p: null, g: r, ops: [] });
+  for (const r of opOnly) list.push({ p: null, g: null, ops: [r] });
+  const nameOf = ({ p, g, ops }) => String((p || g || ops[0])["Desa/Kelurahan"] ?? "");
+  list.sort((a, b) => nameOf(a).localeCompare(nameOf(b), "id"));
+  return { list, totals: opDesaTotals(list, pk, gk) };
+}
+// OPERATIONAL_DRILL_END
+
 function setKpi(m, label) {
   const K = [[m.pop, "Populasi KDKMP", "var(--navy)"], [m.lahan, "Lahan terpetakan\n(gerai di portal)", "var(--navy)"],
     [m.terb, "Gedung terbangun\n(progres 100%)", "var(--navy)"], [m.k5, "(5) Sedang progres\nmembangun", "var(--ink)"],
     [m.k1, readerK1Label(MAN), "var(--ink)"], [m.k2, "(2) Belum terbangun,\nmandek > 3 bulan", "var(--red)"],
-    [m.k3, "(3) Belum memiliki\nlahan", "var(--ink)"], [m.k4, "(4) Sudah terbangun\ndan beroperasi", "var(--blue)"]];
+    [m.k3, "(3) Belum memiliki\nlahan", "var(--ink)"], [m.k4, "(4) KDKMP yang\nberoperasi", "var(--blue)"]];
   $("#kpis").innerHTML = K.map(([n, l, c]) => `<div class="kpi" style="border-left-color:${c}"><div class="n" style="color:${c}">${fmt(n)}</div><div class="l">${esc(l).replace("\n", "<br>")}</div></div>`).join("");
   $("#meta").textContent = `${label} · ${snapshotUpdatedText(MAN)}`;
 }
@@ -806,48 +903,28 @@ async function drill(host) {
       });
     } else {
       dv.innerHTML = `<div class="loading">Memuat data desa (populasi dan gerai)…</div>`;
-      const [P, G] = await Promise.all([dataset("populasi"), dataset("gerai")]);
+      const [Pd, Gd, Od] = await Promise.all([dataset("populasi"), dataset("gerai"), dataset("beroperasi")]);
       if (session !== SESSION || host._rid !== rid || !host.isConnected) return;
-      const pc = Object.fromEntries(P.cols.map((c, i) => [c, i])), gc = Object.fromEntries(G.cols.map((c, i) => [c, i]));
-      const pRows = P.rows.filter((r) => r[pc["Provinsi"]] === SCOPE.prov && r[pc["Kabupaten/Kota"]] === SCOPE.kab);
-      const gRows = G.rows.filter((r) => r[gc["Provinsi"]] === SCOPE.prov && r[gc["Kabupaten/Kota"]] === SCOPE.kab);
-      const kecCode = (kode) => String(kode || "").slice(0, 8);
+      const pRows = opRowObjects(Pd, SCOPE.prov, SCOPE.kab), gRows = opRowObjects(Gd, SCOPE.prov, SCOPE.kab), oRows = opRowObjects(Od, SCOPE.prov, SCOPE.kab);
       if (level === "kec") {
-        const by = new Map();
-        const get = (code, name) => { if (!by.has(code)) by.set(code, { code, name: name || code, m: { k1: 0, k2: 0, k3: 0, k4: 0, k5: 0, pop: 0, lahan: 0, terb: 0, lapor: 0 } }); const o = by.get(code); if (name && o.name === code) o.name = name; return o; };
-        for (const r of pRows) { const o = get(kecCode(r[pc["Kode Desa"]]), r[pc["Kecamatan"]]); o.m.pop++; if (r[pc["Status lahan gerai"]] === "Belum terpetakan") o.m.k3++; }
-        for (const r of gRows) {
-          const o = get(kecCode(r[gc["Kode Desa"]]), r[gc["Kecamatan"]]); o.m.lahan++;
-          const st = r[gc["Status pembangunan"]]; if (st === "Selesai") o.m.terb++; if (st === "Belum melapor progres") o.m.lapor++;
-          o.m.k1 += r[gc["(1) Terbangun dengan kelengkapan"]] === 1 ? 1 : 0; o.m.k2 += +(r[gc["(2) Mandek > 3 bulan"]] || 0);
-          o.m.k4 += +(r[gc["(4) Beroperasi"]] || 0); o.m.k5 += +(r[gc["(5) Sedang progres"]] || 0);
-        }
-        rows = [...by.values()].sort((a, b) => String(a.name).localeCompare(String(b.name), "id"));
+        rows = opDistrictGroups(pRows, gRows, oRows);
         const tot = sumM(rows); setKpi(tot, scopeLabel());
         renderLevel(dv, rows, tot, "Kecamatan", (name, row) => { SCOPE.kec = row.code; SCOPE.kecName = name; drill(host); });
       } else {
-        const pk = pRows.filter((r) => kecCode(r[pc["Kode Desa"]]) === SCOPE.kec);
-        const gk = gRows.filter((r) => kecCode(r[gc["Kode Desa"]]) === SCOPE.kec);
-        const gBy = new Map(gk.map((r) => [r[gc["Kode Desa"]], r]));
-        const seen = new Set();
-        const list = pk.map((r) => { const k = r[pc["Kode Desa"]]; seen.add(k); return { p: r, g: gBy.get(k) || null }; });
-        for (const r of gk) if (!seen.has(r[gc["Kode Desa"]])) list.push({ p: null, g: r });
-        list.sort((a, b) => String(a.p ? a.p[pc["Desa/Kelurahan"]] : a.g[gc["Desa/Kelurahan"]]).localeCompare(String(b.p ? b.p[pc["Desa/Kelurahan"]] : b.g[gc["Desa/Kelurahan"]]), "id"));
-        const m = { k1: 0, k2: 0, k3: 0, k4: 0, k5: 0, pop: pk.length, lahan: gk.length, terb: 0, lapor: 0 };
-        for (const { p } of list) if (p && p[pc["Status lahan gerai"]] === "Belum terpetakan") m.k3++;
-        for (const r of gk) { const st = r[gc["Status pembangunan"]]; if (st === "Selesai") m.terb++; if (st === "Belum melapor progres") m.lapor++;
-          m.k1 += r[gc["(1) Terbangun dengan kelengkapan"]] === 1 ? 1 : 0; m.k2 += +(r[gc["(2) Mandek > 3 bulan"]] || 0); m.k4 += +(r[gc["(4) Beroperasi"]] || 0); m.k5 += +(r[gc["(5) Sedang progres"]] || 0); }
+        const { list, totals: m } = opDesaAssemble(pRows, gRows, oRows, SCOPE.kec);
         setKpi(m, scopeLabel());
         const DC = ["Desa/Kelurahan", "Kode Desa", "NIK Koperasi", "Nama Koperasi", "Status lahan", "Status pembangunan", "Progres terbaru (%)", "Hari lewat target", "Kategori keterlambatan", "Status kelengkapan sarpras", "Item sarpras tiba/terpasang", "(1) Lengkap", "(2) Mandek", "(4) Beroperasi", "(5) Progres", "Peta"];
-        const line = ({ p, g }) => {
-          const G_ = (c) => (g ? g[gc[c]] : null);
-          return [p ? p[pc["Desa/Kelurahan"]] : G_("Desa/Kelurahan"), p ? p[pc["Kode Desa"]] : G_("Kode Desa"), p ? p[pc["NIK Koperasi"]] : G_("NIK Koperasi (master)"),
-            p ? p[pc["Nama Koperasi"]] : G_("Nama Koperasi (portal)"), p ? p[pc["Status lahan gerai"]] : "Terpetakan", G_("Status pembangunan"), readerProgress({ "Progres terbaru (%)": G_("Progres terbaru (%)"), "Progres 6 Okt (%)": G_("Progres 6 Okt (%)") }, LEGACY),
+        const line = ({ p, g, ops }) => {
+          const G_ = (c) => (g ? g[c] ?? null : null), o = ops[0] || {};
+          return [p ? p["Desa/Kelurahan"] : g ? G_("Desa/Kelurahan") : o["Desa/Kelurahan"] ?? null, p ? p["Kode Desa"] : g ? G_("Kode Desa") : o["Kode Desa"] ?? null,
+            p ? p["NIK Koperasi"] : g ? G_("NIK Koperasi (master)") : o["NIK Koperasi"] ?? null,
+            p ? p["Nama Koperasi"] : g ? G_("Nama Koperasi (portal)") : opCoopName(o), p ? p["Status lahan gerai"] : g ? "Terpetakan" : null, G_("Status pembangunan"),
+            g ? readerProgress({ "Progres terbaru (%)": G_("Progres terbaru (%)"), "Progres 6 Okt (%)": G_("Progres 6 Okt (%)") }, LEGACY) : null,
             G_("Hari lewat target"), G_("Kategori keterlambatan"), G_("Status kelengkapan sarpras"), G_("Item sarpras tiba/terpasang"),
-            G_("(1) Terbangun dengan kelengkapan"), G_("(2) Mandek > 3 bulan"), G_("(4) Beroperasi"), G_("(5) Sedang progres"), [G_("Latitude"), G_("Longitude")]];
+            G_("(1) Terbangun dengan kelengkapan"), G_("(2) Mandek > 3 bulan"), ops.length, G_("(5) Sedang progres"), [G_("Latitude"), G_("Longitude")]];
         };
         const L = list.map(line);
-        const flag = (v) => v == null ? '<span class="z" title="Belum diketahui">?</span>' : v === 1 ? '<span class="ok">✓</span>' : '<span class="z">·</span>';
+        const flag = (v) => v == null ? '<span class="z" title="Belum diketahui">?</span>' : v >= 1 ? '<span class="ok">✓</span>' : '<span class="z">·</span>';
         // Tampilan bawaan ringkas: identitas (kode desa, NIK) dan tanda kategori
         // hasil derived di luar tabel; CSV tetap memuat semuanya.
         const hiddenV = [1, 2, 11, 12, 13, 14];
